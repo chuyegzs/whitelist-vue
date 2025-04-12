@@ -29,6 +29,11 @@ const router = createRouter({
             component: () => import('../views/NotFound.vue')
         },
         {
+            path: '/quiz',
+            name: 'quiz',
+            component: () => import('../views/WhitelistQuiz.vue')
+        },
+        {
             path: '/verify',
             name: 'verify',
             component: () => import('../views/VerifyWhitelist.vue')

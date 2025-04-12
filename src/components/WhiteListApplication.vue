@@ -5,10 +5,10 @@
       @touchstart.self="handleFormBlur"
   >
     <SakuraBackground
-        :isDark="isDark"
         :currentTheme="currentTheme"
     />
     <div
+        v-if="!isMobile"
         class="server-status-container"
         :class="{ 'form-focused': isFormFocused }"
     >
@@ -141,10 +141,10 @@
 </template>
 
 <script setup>
-import {computed, onMounted, reactive, ref} from 'vue';
+import {computed, onMounted, onUnmounted, reactive, ref} from 'vue';
 import {ElMessage} from 'element-plus';
 import axios from 'axios';
-import {Loading, Refresh, User, ArrowRight} from '@element-plus/icons-vue'
+import {ArrowRight, Loading, Refresh, User} from '@element-plus/icons-vue'
 import {debounce} from 'lodash-es';
 import SakuraBackground from './common/SakuraBackground.vue'
 
@@ -186,12 +186,10 @@ const submitForm = () => {
   } else {
     fullscreenLoading.value = true;
 
+    const headers = {};
     // 尝试获取用户IP，添加备用接
     const getIpFromPrimarySource = () => {
-      return fetch('https://ip.useragentinfo.com/json', {
-        // 忽略SSL错误
-        mode: 'no-cors'
-      })
+      return fetch('https://ip.useragentinfo.com/json')
           .then(response => response.json())
           .catch(error => {
             console.warn('主要IP获取接口失败，尝试备用接口:', error);
@@ -213,11 +211,6 @@ const submitForm = () => {
     // 开始获取IP
     getIpFromPrimarySource()
         .then(data => {
-          // 准备请求头
-          const headers = {
-            'origin': window.location.origin
-          };
-
           // 如果成功获取到IP，添加到请求头
           if (data && data.ip) {
             headers['X-Real-IP'] = data.ip;
@@ -318,12 +311,21 @@ const displayedServers = computed(() => {
 });
 
 // 检测是否为移动设备
-const isMobile = computed(() => {
-  return window.innerWidth <= 768;
-});
+const isMobile = ref(window.innerWidth <= 768);
+
+// 添加窗口大小变化监听
+const handleResize = () => {
+  isMobile.value = window.innerWidth <= 768;
+};
 
 onMounted(() => {
   getOnlinePlayer();
+  window.addEventListener('resize', handleResize);
+});
+
+// 组件卸载时移除事件监听
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
 });
 </script>
 
@@ -335,9 +337,10 @@ onMounted(() => {
   width: 100%;
   min-height: 100vh;
   background-size: 400% 400%;
-  background-image: var(--theme-gradient);
+  background-image: var(--theme-gradient, linear-gradient(-45deg, #e0e0ff, #ffd6e7, #ffdfd0, #fff4d1, #d4ffe6, #cce9ff, #f0e6ff, #ffe6f0, #ffe6e6));
   animation: warmGradient 20s ease infinite;
   font-family: 'CustomFont', sans-serif;
+  transition: background-image 0.5s ease;
 }
 
 @keyframes warmGradient {
@@ -418,6 +421,10 @@ onMounted(() => {
   position: relative;
   overflow: hidden;
   font-family: 'CustomFont', sans-serif;
+  background: linear-gradient(45deg, #409EFF, #36cfc9);
+  border: none;
+  box-shadow: 0 4px 15px rgba(64, 158, 255, 0.3);
+  z-index: 1;
 }
 
 .submit-btn::before {
@@ -434,6 +441,7 @@ onMounted(() => {
       transparent
   );
   transition: 0.5s;
+  z-index: -1;
 }
 
 .submit-btn:hover::before {
@@ -442,6 +450,22 @@ onMounted(() => {
 
 .submit-btn:hover {
   transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(64, 158, 255, 0.4);
+}
+
+.submit-btn:active {
+  transform: scale(0.98);
+}
+
+:deep(.el-form-item__label) {
+  font-weight: 500;
+  color: #303133;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-form-item:hover .el-form-item__label) {
+  color: var(--theme-primary);
+  transform: translateX(2px);
 }
 
 :deep(.el-input__inner) {
@@ -457,6 +481,7 @@ onMounted(() => {
 
 :deep(.el-input__inner:hover) {
   border-color: #409EFF;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.1);
 }
 
 :deep(.el-input__inner:focus) {
@@ -484,15 +509,6 @@ onMounted(() => {
   border-color: #409EFF;
   box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
   background: #fff;
-}
-
-:deep(.el-form-item) {
-  margin-bottom: 25px;
-}
-
-:deep(.el-form-item__label) {
-  font-weight: 500;
-  color: #303133;
 }
 
 .form-container :deep(.el-input__wrapper),
@@ -1001,73 +1017,62 @@ onMounted(() => {
 }
 
 /* 暗色模式样式 */
-html.dark .app-wrapper {
-  background: #1e1e2e; /* 使用纯色背景 */
-}
-
 html.dark .form-container {
-  background-color: rgba(35, 35, 45, 0.7);
+  background-color: rgba(30, 30, 40, 0.75);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-html.dark .server-status-container {
-  background-color: rgba(35, 35, 45, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+html.dark .form-container:hover {
+  box-shadow: 0 12px 40px rgba(64, 158, 255, 0.2);
+  border: 1px solid rgba(64, 158, 255, 0.2);
+}
+
+html.dark .title-container h2 {
+  text-shadow: 0 0 10px rgba(64, 158, 255, 0.3);
 }
 
 html.dark .description {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.8);
 }
 
-html.dark .server-name {
-  color: rgba(255, 255, 255, 0.9);
+html.dark .submit-btn {
+  background: linear-gradient(45deg, #0a84ff, #00b3e6);
+  box-shadow: 0 4px 15px rgba(10, 132, 255, 0.3);
 }
 
-html.dark .player-tag {
-  background-color: rgba(64, 158, 255, 0.1);
-  border-color: rgba(64, 158, 255, 0.2);
-  color: rgba(255, 255, 255, 0.9);
+html.dark .submit-btn:hover {
+  box-shadow: 0 6px 20px rgba(10, 132, 255, 0.5);
 }
 
-html.dark .sakura {
-  opacity: 0.3;
-  filter: brightness(0.8);
+/* 为表单项添加微交互 */
+.el-form-item {
+  position: relative;
 }
 
-/* 修改输入框样式 */
-html.dark :deep(.el-input__inner),
-html.dark :deep(.el-textarea__inner) {
-  background-color: rgba(30, 30, 40, 0.8) !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-  box-shadow: none !important;
+.animated-form :deep(.el-input),
+.animated-form :deep(.el-textarea) {
+  position: relative;
+  z-index: 1;
 }
 
-/* 输入框和文本框的悬停和焦点状态 */
-html.dark :deep(.el-input__inner:hover),
-html.dark :deep(.el-textarea__inner:hover),
-html.dark :deep(.el-input__inner:focus),
-html.dark :deep(.el-textarea__inner:focus) {
-  border-color: rgba(64, 158, 255, 0.3) !important;
-  background-color: rgba(35, 35, 45, 0.9) !important;
+.animated-form :deep(.el-input::after),
+.animated-form :deep(.el-textarea::after) {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--theme-primary), transparent);
+  transition: width 0.3s ease, left 0.3s ease;
+  z-index: 0;
 }
 
-/* 输入框和文本框的包装器样式 */
-html.dark :deep(.el-input__wrapper),
-html.dark :deep(.el-textarea__wrapper) {
-  background-color: transparent !important;
-  box-shadow: none !important;
-}
-
-html.dark :deep(.el-radio__label) {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-html.dark :deep(.el-form-item__label) {
-  color: rgba(255, 255, 255, 0.9);
+.animated-form :deep(.el-input:focus-within::after),
+.animated-form :deep(.el-textarea:focus-within::after) {
+  width: 100%;
+  left: 0%;
 }
 
 /* 赛博朋克主题特殊样式 */
@@ -1131,28 +1136,106 @@ html.dark :deep(.el-form-item__label) {
   .app-wrapper {
     flex-direction: column;
     padding: 20px;
-    justify-content: flex-start;
-  }
-
-  .server-status-container {
-    position: static;
-    width: 100%;
-    max-width: none;
-    margin-top: 20px;
-    transform: none;
-    order: 2;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
   }
 
   .form-container {
-    margin-top: 0;
-    order: 1;
+    margin: 0;
     width: 100%;
+    max-width: 500px;
+    animation: fadeIn 0.5s ease-out;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
 
-  /* 移除表单焦点时的服务器状态容器样式 */
-  .server-status-container.form-focused {
-    opacity: 1;
+  /* 移动端表单容器适配 */
+  .form-container:hover {
     transform: none;
+  }
+
+  /* 添加表单聚焦效果 */
+  .form-container.focused {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(var(--theme-primary-rgb), 0.2);
+  }
+
+  /* 修改查看成员按钮样式在移动端的表现 */
+  .view-members-btn {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
+  /* 优化表单元素在移动端的显示 */
+  :deep(.el-form-item__label) {
+    padding-right: 8px;
+  }
+
+  :deep(.el-radio) {
+    margin-right: 12px;
+  }
+
+  .animated-form :deep(.el-form-item:hover) {
+    transform: none;
+  }
+
+  /* 美化提交按钮 */
+  .submit-btn {
+    transform: scale(1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 80%;
+    margin: 0 auto;
+    border-radius: 12px;
+    background: linear-gradient(45deg, #409EFF, #36cfc9);
+    box-shadow: 0 4px 15px rgba(64, 158, 255, 0.2);
+  }
+
+  .submit-btn:hover, .submit-btn:active {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(64, 158, 255, 0.4);
+  }
+}
+
+/* 添加表单标题动画效果 */
+.title-container h2 {
+  position: relative;
+  overflow: hidden;
+}
+
+.title-container h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--theme-primary), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.form-container:hover .title-container h2::after {
+  transform: translateX(100%);
+}
+
+/* 添加输入框和按钮焦点状态的动效 */
+:deep(.el-input__inner:focus),
+:deep(.el-textarea__inner:focus) {
+  animation: inputPulse 2s infinite;
+}
+
+@keyframes inputPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(64, 158, 255, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(64, 158, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(64, 158, 255, 0);
   }
 }
 
@@ -1575,4 +1658,121 @@ html.dark :deep(.el-form-item__label) {
   transform: translateX(4px);
 }
 
+/* 添加漂亮的加载和完成动画 */
+@keyframes successPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(103, 194, 58, 0.4);
+    background-color: #67C23A;
+  }
+  70% {
+    box-shadow: 0 0 0 15px rgba(103, 194, 58, 0);
+    background-color: #67C23A;
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(103, 194, 58, 0);
+    background-color: #67C23A;
+  }
+}
+
+/* 添加输入框聚焦效果 */
+.form-container .animated-form:focus-within {
+  transform: scale(1.01);
+}
+
+/* 添加标题和描述的进场动画 */
+.title-container, .description {
+  animation: slideInFromTop 0.6s ease-out;
+}
+
+@keyframes slideInFromTop {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 优化表单项进场动画 */
+.animated-form :deep(.el-form-item) {
+  animation: fadeInStaggered 0.5s ease-out backwards;
+}
+
+.animated-form :deep(.el-form-item:nth-child(1)) {
+  animation-delay: 0.1s;
+}
+
+.animated-form :deep(.el-form-item:nth-child(2)) {
+  animation-delay: 0.2s;
+}
+
+.animated-form :deep(.el-form-item:nth-child(3)) {
+  animation-delay: 0.3s;
+}
+
+.animated-form :deep(.el-form-item:nth-child(4)) {
+  animation-delay: 0.4s;
+}
+
+.button-group {
+  animation: fadeInStaggered 0.5s ease-out backwards;
+  animation-delay: 0.5s;
+}
+
+@keyframes fadeInStaggered {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 暗色模式输入框样式 */
+html.dark :deep(.el-input__inner),
+html.dark :deep(.el-textarea__inner) {
+  background-color: rgba(30, 30, 40, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: none !important;
+}
+
+/* 输入框和文本框的悬停和焦点状态 */
+html.dark :deep(.el-input__inner:hover),
+html.dark :deep(.el-textarea__inner:hover) {
+  border-color: rgba(64, 158, 255, 0.3) !important;
+  background-color: rgba(35, 35, 45, 0.8) !important;
+}
+
+html.dark :deep(.el-input__inner:focus),
+html.dark :deep(.el-textarea__inner:focus) {
+  border-color: rgba(64, 158, 255, 0.5) !important;
+  background-color: rgba(35, 35, 45, 0.9) !important;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2) !important;
+}
+
+/* 输入框和文本框的包装器样式 */
+html.dark :deep(.el-input__wrapper),
+html.dark :deep(.el-textarea__wrapper) {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+html.dark :deep(.el-radio__label) {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+html.dark :deep(.el-form-item__label) {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* 更顺滑的表单聚焦过渡 */
+.form-container.focused {
+  transform: translateY(-10px);
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
 </style>
