@@ -19,6 +19,10 @@ const router = createRouter({
             component: () => import('../components/ServerStatus.vue')
         },
         {
+            path: '/player-servers',
+            redirect: '/404'
+        },
+        {
             path: '/player-servers/:gameId',
             name: 'playerServers',
             component: () => import('../components/PlayerServers.vue')

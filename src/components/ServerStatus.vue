@@ -64,17 +64,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import {onMounted, ref} from 'vue'
+import {ElMessage} from 'element-plus'
 import axios from 'axios'
-import { Back, Loading, Monitor, Refresh, Timer, User } from '@element-plus/icons-vue'
+import {Back, Loading, Monitor, Refresh, Timer, User} from '@element-plus/icons-vue'
 
 const loading = ref(false)
 const servers = ref([])
 const queryTime = ref('-')
 
 const http = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://application.shenzhuo.vip',
+  baseURL: import.meta.env.VITE_API_URL,
   timeout: 8000
 })
 

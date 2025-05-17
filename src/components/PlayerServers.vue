@@ -107,7 +107,7 @@ const route = useRoute();
 const router = useRouter();
 
 const http = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://application.shenzhuo.vip',
+  baseURL: import.meta.env.VITE_API_URL,
   timeout: 8000
 });
 

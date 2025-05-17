@@ -120,8 +120,8 @@
         </el-form-item>
         <el-form-item label="正版：">
           <el-radio-group v-model="form.onlineFlag">
-            <el-radio label="1">是</el-radio>
-            <el-radio label="0">否</el-radio>
+            <el-radio :value="1">是</el-radio>
+            <el-radio :value="0">否</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="描述：" label-width="auto">
@@ -149,7 +149,7 @@ import {debounce} from 'lodash-es';
 import SakuraBackground from './common/SakuraBackground.vue'
 
 const http = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://application.shenzhuo.vip', // 使用环境变量
+  baseURL: import.meta.env.VITE_API_URL, // 使用环境变量
   timeout: 8000
 });
 
@@ -189,23 +189,35 @@ const submitForm = () => {
     const headers = {};
     // 尝试获取用户IP，添加备用接
     const getIpFromPrimarySource = () => {
-      return fetch('https://ip.useragentinfo.com/json')
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+      return fetch('https://ip.useragentinfo.com/json', {
+        signal: controller.signal
+      })
           .then(response => response.json())
           .catch(error => {
             console.warn('主要IP获取接口失败，尝试备用接口:', error);
             return getIpFromBackupSource();
-          });
+          })
+          .finally(() => clearTimeout(timeoutId));
     };
 
     // 备用IP获取接口
     const getIpFromBackupSource = () => {
-      return fetch('https://ipinfo.io/json')
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+      return fetch('https://ipinfo.io/json', {
+        signal: controller.signal
+      })
           .then(response => response.json())
           .catch(error => {
             console.warn('备用IP获取接口也失败:', error);
             // 返回一个空对象，表示无法获取IP
             return {};
-          });
+          })
+          .finally(() => clearTimeout(timeoutId));
     };
 
     // 开始获取IP
