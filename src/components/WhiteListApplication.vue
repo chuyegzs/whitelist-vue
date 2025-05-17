@@ -120,8 +120,8 @@
         </el-form-item>
         <el-form-item label="正版：">
           <el-radio-group v-model="form.onlineFlag">
-            <el-radio :label="1">是</el-radio>
-            <el-radio :label="0">否</el-radio>
+            <el-radio label="1">是</el-radio>
+            <el-radio label="0">否</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="描述：" label-width="auto">
